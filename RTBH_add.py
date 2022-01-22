@@ -1,13 +1,15 @@
 #add ip to iranaccess list using netmiko to connect to router
-from unittest import result
 from netmiko import ConnectHandler
-from getpass import getpass
 import ipaddress
 import re
+import sys
+
 print("Add ip to Iran Access list, Be Careful!")
-username = input("Enter UserName: ")
-password = getpass("Enter PassWord: ")                                                                                                                                
-address = str(input("Enter IP: "))
+
+username = sys.argv[1]
+password = sys.argv[2]
+address = sys.argv[3]
+
 #Check if this is a valid IP address or not
 try:
     ip = ipaddress.ip_address(address)
@@ -19,7 +21,7 @@ except ValueError:
 #Device authentication info  
 N5k = {
     'device_type': 'cisco_ios',
-    'host':   '192.168.1.4',
+    'host':   '192.168.240.1',
     'username': username,
     'password': password,
 }
@@ -68,16 +70,15 @@ result_N5k_rtbh_route_map_under_bgp_is_exist = N5k_ssh.send_command("sh ip bgp n
 matched_route_map_under_bgp = re.findall("Outbound route-map configured is RTBH", result_N5k_rtbh_route_map_under_bgp_is_exist)
 is_match_route_map  = bool(matched_route_map_under_bgp)
 if is_match_route_map:
-    print("route-map already exists onder BGP neighbor!")
+    print("route-map already exists under BGP neighbor!")
     print("clearing bgp ...")
     result_N5k_clear_ip_bgp = N5k_ssh.send_command("clear ip bgp 172.24.125.9 soft")
-    
 else:
     print("route-map missing from BGP neighbor!")
     print("apply route-map on BGP neighbor ...")
     print("clearing bgp ...")
     config_bgp_route_map = ['router bgp 48715', 'neighbor 172.24.125.9 remote-as 43754', 'address-family ipv4 unicast', 'route-map RTBH out', 'clear ip bgp 172.24.125.9 soft']
-    result_bgp_route_map = N5k_ssh.send_config_set(config_bgp_route_map )
+    result_bgp_route_map = N5k_ssh.send_config_set(config_bgp_route_map, delay_factor=4)
 print("Saving Config ...")
-config_write_memory = N5k_ssh.send_command("copy running-config startup-config ")    
+config_write_memory = N5k_ssh.send_command("copy running-config startup-config")    
 N5k_ssh.disconnect()
