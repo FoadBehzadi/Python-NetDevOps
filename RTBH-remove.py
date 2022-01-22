@@ -1,13 +1,14 @@
 #remove ip from iranaccess list using netmiko to connect to router
-from unittest import result
 from netmiko import ConnectHandler
-from getpass import getpass
 import ipaddress
 import re
+import sys
 print("Remove ip from Iran Access list, Be Careful!")
-username = input("Enter UserName: ")
-password = getpass("Enter PassWord: ")
-address = str(input("Enter IP: "))
+
+username = sys.argv[1]
+password = sys.argv[2]
+address = sys.argv[3]
+
 #Check if this is a valid IP address or not
 try:
     ip = ipaddress.ip_address(address)
@@ -19,7 +20,7 @@ except ValueError:
 #Device authentication info 
 N5k = {
     'device_type': 'cisco_ios',
-    'host':   '192.168.1.4',
+    'host':   '192.168.240.1',
     'username': username,
     'password': password,
 }
@@ -49,19 +50,35 @@ if is_match_1entries:
     print( address, " is last entry in prefixlist")
     print("removing route-map in bgp neighbor ...")
     config_bgp_remove_route_map = ['router bgp 48715', 'neighbor 172.24.125.9 remote-as 43754', 'address-family ipv4 unicast', 'no route-map RTBH out', 'clear ip bgp 172.24.125.9 soft']
-    result_bgp_remove_route_map = N5k_ssh.send_config_set(config_bgp_remove_route_map )
-
+    result_bgp_remove_route_map = N5k_ssh.send_config_set(config_bgp_remove_route_map, delay_factor=4)
+    #print(result_bgp_remove_route_map)
 #bgp no network
-str_address = " " + address + "/32"
+str_address =  address + "/32"
 print("remove ", address , " from bgp network ...")
-config_bgp_remove_network = [ 'router bgp 48715', 'address-family ipv4 unicast', 'no network ' + str_address, 'clear ip bgp 172.24.125.9 soft' ]
+config_bgp_remove_network = [ 'router bgp 48715', 'address-family ipv4 unicast', 'no network ' + str_address ]
 result_bgp_remove_network = N5k_ssh.send_config_set(config_bgp_remove_network)
+#print(result_bgp_remove_network)
 print("clear bgp neighbor ...")
-
+result_N5k_clear_ip_bgp = N5k_ssh.send_command("clear ip bgp 172.24.125.9 soft")
 #remove /32 to prefix-lists
 print("removing ", address, " from prefix list ...")
-config_remove_ip_prefixlist_RTBH_entry = N5k_ssh.send_config_set("no ip prefix-list RTBH permit " + address + "/32" )
-config_remove_ip_prefixlist_Asiatech = N5k_ssh.send_config_set("no ip prefix-list Asiatech-IDC-1 permit " + address + "/32" )
+config_remove_ip_prefixlist_RTBH_entry = N5k_ssh.send_config_set("no ip prefix-list RTBH permit " + address + "/32")
+config_remove_ip_prefixlist_Asiatech = N5k_ssh.send_config_set("no ip prefix-list Asiatech-IDC-1 permit " + address + "/32")
 print("Saving Config ...")
 config_write_memory = N5k_ssh.send_command("copy running-config startup-config ")
+'''else:
+    #bgp no network
+    str_address = " " + address + "/32"
+    print("remove ", address , " from bgp network ...")
+    config_bgp_remove_network = [ 'router bgp 48715', 'address-family ipv4 unicast', 'no network ' + str_address, 'clear ip bgp 172.24.125.9 soft']
+    result_bgp_remove_network = N5k_ssh.send_config_set(config_bgp_remove_network)
+    print("clear bgp neighbor ...")
+    #remove /32 to prefix-lists
+    print("removing ", address, " from prefix list ...")
+    config_remove_ip_prefixlist_RTBH_entry = N5k_ssh.send_config_set("no ip prefix-list RTBH permit " + address + "/32")
+    config_remove_ip_prefixlist_Asiatech = N5k_ssh.send_config_set("no ip prefix-list Asiatech-IDC-1 permit " + address + "/32")
+    print("Saving Config ...")
+    config_write_memory = N5k_ssh.send_command("copy running-config startup-config ")'''
+
 N5k_ssh.disconnect()
+
