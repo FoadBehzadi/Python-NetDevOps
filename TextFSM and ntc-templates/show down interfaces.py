@@ -28,8 +28,11 @@ try:
     print(json.dumps(show_result, indent=2))
     #get the python dictionary and turn it into json and prettify it
     for interface in show_result:
-        if interface['status'] == 'down':
-            print(f"{interface['intf']} is down!")
+        if interface['status'] in ['administratively down', 'down']:
+        #other way to do that
+        #if interface['status'] == 'administratively down' or interface['status'] == 'down':     
+            print(f"{interface['intf']} is down!") 
+            # f means its formatted string and replace {interface['intf']} with its value
     bras_ssh.disconnect()
 except Exception as error:
     print(error)    
