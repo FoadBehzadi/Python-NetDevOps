@@ -1,0 +1,1 @@
+before we start we need to set the NET_TEXTFSM environment variable to point to the ntc-templates/templates directory
