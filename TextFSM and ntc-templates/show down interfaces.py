@@ -30,7 +30,7 @@ try:
     for interface in show_result:
         if interface['status'] == 'down':
             print(f"{interface['intf']} is down!")
-    bras_ssh.close()
+    bras_ssh.disconnect()
 except Exception as error:
     print(error)    
     '''
